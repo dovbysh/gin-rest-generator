@@ -1,4 +1,4 @@
-package gowrap
+package gorg
 
 /*
 DO NOT EDIT!

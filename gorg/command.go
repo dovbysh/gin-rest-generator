@@ -1,4 +1,4 @@
-package gowrap
+package gorg
 
 import (
 	"flag"
@@ -7,7 +7,7 @@ import (
 	"text/template"
 )
 
-// Command interface represents gowrap subcommand
+// Command interface represents gorg subcommand
 type Command interface {
 	//FlagSet returns command specific flag set. If command doesn't have any flags nil should be returned.
 	FlagSet() *flag.FlagSet
@@ -67,20 +67,20 @@ func GetCommand(name string) Command {
 	return commands[name]
 }
 
-// Usage writes gowrap usage message to w
+// Usage writes gin-rest-generator usage message to w
 func Usage(w io.Writer) error {
 	return usageTemplate.Execute(w, commands)
 }
 
-var usageTemplate = template.Must(template.New("usage").Parse(`GoWrap is a tool for generating decorators for the Go interfaces
+var usageTemplate = template.Must(template.New("usage").Parse(`gin-rest-generator is a tool for generating decorators for the Go interfaces
 
 Usage:
 
-	gowrap command [arguments]
+	gorg command [arguments]
 
 The commands are:
 {{ range $name, $cmd := . }}
 	{{ printf "%-10s" $name }}{{ $cmd.ShortDescription }}
 {{ end }}
-Use "gowrap help [command]" for more information about a command.
+Use "gorg help [command]" for more information about a command.
 `))

@@ -1,4 +1,4 @@
-package gowrap
+package gorg
 
 import (
 	"errors"
@@ -25,11 +25,11 @@ func NewTemplateCommand(loader remoteTemplateLoader) *TemplateCommand {
 			Help: `
 Subcommands are:
 
-  list - list all template in gowrap repository
+  list - list all template in gin-rest-generator repository
 
   copy - copy remote template to a local file, i.e.
 
-    gowrap template copy fallback templates/fallback
+    gorg template copy fallback templates/fallback
 `,
 		},
 		loader: loader,

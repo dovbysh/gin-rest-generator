@@ -1,4 +1,4 @@
-package gowrap
+package gorg
 
 import (
 	"io/ioutil"

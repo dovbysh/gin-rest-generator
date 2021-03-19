@@ -1,4 +1,4 @@
-package gowrap
+package gorg
 
 import (
 	"bytes"
@@ -51,8 +51,8 @@ func NewGenerateCommand(l remoteTemplateLoader) *GenerateCommand {
 	fs.StringVar(&gc.interfaceName, "i", "", `the source interface name, i.e. "Reader"`)
 	fs.StringVar(&gc.sourcePkg, "p", "", "the source package import path, i.e. \"io\", \"github.com/dovbysh/gin-rest-generator\" or\na relative import path like \"./generator\"")
 	fs.StringVar(&gc.outputFile, "o", "", "the output file name")
-	fs.StringVar(&gc.template, "t", "", "the template to use, it can be an HTTPS URL, local file or a\nreference to a template in gowrap repository,\n"+
-		"run `gowrap template list` for details")
+	fs.StringVar(&gc.template, "t", "", "the template to use, it can be an HTTPS URL, local file or a\nreference to a template in gin-rest-generator repository,\n"+
+		"run `gorg template list` for details")
 	fs.Var(&gc.vars, "v", "a key-value pair to parametrize the template,\narguments without an equal sign are treated as a bool values,\ni.e. -v foo=bar -v disableChecks")
 
 	gc.BaseCommand = BaseCommand{
@@ -294,7 +294,7 @@ const headerTemplate = `package {{.Package.Name}}
 // using {{.Options.HeaderVars.Template}} template
 
 {{if (not .Options.HeaderVars.DisableGoGenerate)}}
-//{{"go:generate"}} gowrap gen -p {{.SourcePackage.PkgPath}} -i {{.Options.InterfaceName}} -t {{.Options.HeaderVars.Template}} -o {{.Options.HeaderVars.OutputFileName}}{{.Options.HeaderVars.VarsArgs}}
+//{{"go:generate"}} gorg gen -p {{.SourcePackage.PkgPath}} -i {{.Options.InterfaceName}} -t {{.Options.HeaderVars.Template}} -o {{.Options.HeaderVars.OutputFileName}}{{.Options.HeaderVars.VarsArgs}}
 {{end}}
 
 `
