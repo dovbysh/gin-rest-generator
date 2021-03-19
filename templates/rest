@@ -20,12 +20,12 @@ func New{{$rest}}(router *gin.RouterGroup, usecase {{.Interface.Type}}) *{{$rest
 
 {{ $vars := .Vars }}
 const (
-{{range $method := .Interface.Methods}}{{ $url := (or (index $vars (printf "Url%s" $method.Name)) (printf "/%s" (down $method.Name))) }}  Url{{$method.Name}} = "{{$url}}"
+{{range $method := .Interface.Methods}}{{ $url := (or $method.Operation.Path (index $vars (printf "Url%s" $method.Name)) (printf "/%s" (down $method.Name))) }}  Url{{$method.Name}} = "{{$url}}"
 {{end}}
 )
 
 func (r *{{$rest}}) routes(router *gin.RouterGroup) {
-{{range $method := .Interface.Methods}}  router.POST(Url{{$method.Name}}, r.handler{{$method.Name}})
+{{range $method := .Interface.Methods}}  router.{{$method.Operation.HTTPMethod}}(Url{{$method.Name}}, r.handler{{$method.Name}})
 {{end}}
 }
 
@@ -34,15 +34,14 @@ func (r *{{$rest}}) routes(router *gin.RouterGroup) {
 {{if (eq $p.Name "ctx") }}{{else}}{{(upFirst $p.Name)}} {{$p.Type}}  `json:"{{(toSnakeCase $p.Name)}}" form:"{{(toSnakeCase $p.Name)}}"`{{end}} {{end}}
 }
 {{end}}
-{{if $enableDoc}}
+{{if $enableDoc}} {{range $d := $method.Doc}}
+{{$d}} {{end}}
 // @Summary {{range $i,$d := $method.Doc}}{{if (eq $i 0)}}{{$d}} {{end}}{{end}}
 // @description {{range $d := $method.Comment}}{{$d}}{{end}}
 // @Accept json
 // @Produce json
 {{if $method.HasParams}}// @Param req body Request{{$method.Name}} false "req"{{end}}
-// @Success 200 {array} {{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{$r.Type}}{{end}}{{end}}
-// @Router {{ (or (index $vars (printf "Url%s" $method.Name)) (printf "/%s" (down $method.Name))) }} [POST] {{range $d := $method.Doc}}
-{{$d}} {{end}}{{end}}
+// @Success 200 {array} {{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{$r.Type}}{{end}}{{end}} {{end}}
 func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
 {{- if $method.HasParams}}    var req Request{{$method.Name}}
     if err := c.ShouldBindJSON(&req); err != nil {

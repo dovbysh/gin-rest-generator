@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"strings"
+	"github.com/swaggo/swag"
 )
 
 type typePrinter interface {
@@ -17,6 +18,7 @@ type Method struct {
 	Name    string
 	Params  ParamsSlice
 	Results ParamsSlice
+	Operation swag.Operation
 
 	ReturnsError   bool
 	AcceptsContext bool
@@ -72,6 +74,7 @@ func NewMethod(name string, f *ast.FuncType, printer typePrinter, fi *ast.Field)
 		m.Doc = make([]string, 0, len(fi.Doc.List))
 		for _, comment := range fi.Doc.List {
 			m.Doc = append(m.Doc, comment.Text)
+			m.Operation.ParseComment(comment.Text, nil)
 		}
 	}
 
@@ -79,6 +82,7 @@ func NewMethod(name string, f *ast.FuncType, printer typePrinter, fi *ast.Field)
 		m.Comment = make([]string, 0, len(fi.Comment.List))
 		for _, comment := range fi.Comment.List {
 			m.Comment = append(m.Comment, comment.Text)
+			m.Operation.ParseComment(comment.Text, nil)
 		}
 	}
 
