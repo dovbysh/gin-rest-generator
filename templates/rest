@@ -30,31 +30,39 @@ func (r *{{$rest}}) routes(router *gin.RouterGroup) {
 }
 
 {{range $method := .Interface.Methods}}
-{{if $method.HasParams}} type Request{{$method.Name}} struct { {{range $p := $method.Params}}
-{{if (eq $p.Name "ctx") }}{{else}}{{(upFirst $p.Name)}} {{$p.Type}}  `json:"{{(toSnakeCase $p.Name)}}" form:"{{(toSnakeCase $p.Name)}}"`{{end}} {{end}}
-}
+{{if (not $method.NoParamsRequest)}}
+    {{if $method.HasParams}} type Request{{$method.Name}} struct { {{range $p := $method.Params}}
+        {{if (eq $p.Name "ctx") }}{{else}}{{(upFirst $p.Name)}} {{$p.Type}}  `json:"{{(toSnakeCase $p.Name)}}" form:"{{(toSnakeCase $p.Name)}}"`{{end}} {{end}}
+        }
+    {{end}}
 {{end}}
 {{if $enableDoc}} {{range $d := $method.Doc}}
 {{$d}} {{end}}
 // @Summary {{range $i,$d := $method.Doc}}{{if (eq $i 0)}}{{$d}} {{end}}{{end}}
 // @description {{range $d := $method.Comment}}{{$d}}{{end}}
 // @Accept json
-// @Produce json
-{{if $method.HasParams}}// @Param req body Request{{$method.Name}} false "req"{{end}}
+// @Produce json {{if (and $method.HasParams (not $method.NoParamsRequest))}}
+// @Param req body Request{{$method.Name}} false "req"{{end}}
 // @Success 200 {array} {{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{$r.Type}}{{end}}{{end}} {{end}}
 func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
-{{- if $method.HasParams}}    var req Request{{$method.Name}}
-    if err := c.ShouldBindJSON(&req); err != nil {
-    			err = wrapErr.NewWrapErr(fmt.Errorf("binding data from query {{$method.Name}}"), err)
-    			c.AbortWithError(http.StatusBadRequest, err)
-    			return
-    }
-
-    res, err := r.Usecase.{{$method.Name}}({{range $p := $method.Params}}
-     {{if (eq $p.Name "ctx") }}c.Request.Context(){{else}}req.{{(upFirst $p.Name)}}{{end}},{{end}}
-    )
+{{if  $method.NoParamsRequest}}
+       res, err := r.Usecase.{{$method.Name}}( {{if $method.AcceptsContext}}c.Request.Context(){{end}} )
 {{else}}
-	res, err := r.Usecase.{{$method.Call}}
+        {{- if $method.HasParams}}    var req Request{{$method.Name}}
+            {{if $method.NoParamsRequired}} if c.Request.ContentLength > 0 { {{end}}
+            if err := c.ShouldBindJSON(&req); err != nil {
+                        err = wrapErr.NewWrapErr(fmt.Errorf("binding data from query {{$method.Name}}"), err)
+                        c.AbortWithError(http.StatusBadRequest, err)
+                        return
+            }
+            {{if $method.NoParamsRequired}} } {{end}}
+
+            res, err := r.Usecase.{{$method.Name}}({{range $p := $method.Params}}
+             {{if (eq $p.Name "ctx") }}c.Request.Context(){{else}}req.{{(upFirst $p.Name)}}{{end}},{{end}}
+            )
+        {{else}}
+            res, err := r.Usecase.{{$method.Call}}
+        {{end -}}
 {{end -}}
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)

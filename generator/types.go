@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"strings"
+
 	"github.com/swaggo/swag"
 )
 
@@ -13,15 +14,17 @@ type typePrinter interface {
 
 // Method represents a method's signature
 type Method struct {
-	Doc     []string
-	Comment []string
-	Name    string
-	Params  ParamsSlice
-	Results ParamsSlice
+	Doc       []string
+	Comment   []string
+	Name      string
+	Params    ParamsSlice
+	Results   ParamsSlice
 	Operation swag.Operation
 
-	ReturnsError   bool
-	AcceptsContext bool
+	ReturnsError     bool
+	AcceptsContext   bool
+	NoParamsRequired bool
+	NoParamsRequest  bool
 }
 
 // Param represents fuction argument or result
@@ -70,11 +73,19 @@ func (p Param) Pass() string {
 // NewMethod returns pointer to Signature struct or error
 func NewMethod(name string, f *ast.FuncType, printer typePrinter, fi *ast.Field) (*Method, error) {
 	m := Method{Name: name}
+	NoParamsRequired := false
+	NoParamsRequest := false
 	if fi.Doc != nil && len(fi.Doc.List) > 0 {
 		m.Doc = make([]string, 0, len(fi.Doc.List))
 		for _, comment := range fi.Doc.List {
 			m.Doc = append(m.Doc, comment.Text)
 			m.Operation.ParseComment(comment.Text, nil)
+			if strings.ToLower(strings.TrimSpace(comment.Text)) == "// @gorg noparamsrequired" {
+				NoParamsRequired = true
+			}
+			if strings.ToLower(strings.TrimSpace(comment.Text)) == "// @gorg noparamsrequest" {
+				NoParamsRequest = true
+			}
 		}
 	}
 
@@ -83,8 +94,17 @@ func NewMethod(name string, f *ast.FuncType, printer typePrinter, fi *ast.Field)
 		for _, comment := range fi.Comment.List {
 			m.Comment = append(m.Comment, comment.Text)
 			m.Operation.ParseComment(comment.Text, nil)
+			if strings.ToLower(strings.TrimSpace(comment.Text)) == "// @gorg noparamsrequired" {
+				NoParamsRequired = true
+			}
+			if strings.ToLower(strings.TrimSpace(comment.Text)) == "// @gorg noparamsrequest" {
+				NoParamsRequest = true
+			}
 		}
 	}
+
+	m.NoParamsRequired = NoParamsRequired
+	m.NoParamsRequest = NoParamsRequest
 
 	usedNames := map[string]bool{}
 
