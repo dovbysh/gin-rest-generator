@@ -1,0 +1,70 @@
+import (
+	"fmt"
+	"net/http"
+
+	wrapErr "github.com/Chekunin/wraperr"
+	"github.com/gin-gonic/gin"
+)
+
+{{ $rest := (or .Vars.DecoratorName (printf "%sRest" .Interface.Name)) }}
+{{ $enableDoc := (not .Vars.NoDocs) }}
+type {{$rest}} struct {
+  Usecase {{.Interface.Type}}
+}
+
+func New{{$rest}}(router *gin.RouterGroup, usecase {{.Interface.Type}}) *{{$rest}} {
+	rest := &{{$rest}}{Usecase: usecase}
+	rest.routes(router)
+	return rest
+}
+
+{{ $vars := .Vars }}
+const (
+{{range $method := .Interface.Methods}}{{ $url := (or (index $vars (printf "Url%s" $method.Name)) (printf "/%s" (down $method.Name))) }}  Url{{$method.Name}} = "{{$url}}"
+{{end}}
+)
+
+func (r *{{$rest}}) routes(router *gin.RouterGroup) {
+{{range $method := .Interface.Methods}}  router.POST(Url{{$method.Name}}, r.handler{{$method.Name}})
+{{end}}
+}
+
+{{range $method := .Interface.Methods}}
+{{if $method.HasParams}} type Request{{$method.Name}} struct { {{range $p := $method.Params}}
+{{if (eq $p.Name "ctx") }}{{else}}{{(upFirst $p.Name)}} {{$p.Type}}  `json:"{{(toSnakeCase $p.Name)}}" form:"{{(toSnakeCase $p.Name)}}"`{{end}} {{end}}
+}
+{{end}}
+{{if $enableDoc}}
+// @Summary {{range $i,$d := $method.Doc}}{{if (eq $i 0)}}{{$d}} {{end}}{{end}}
+// @description {{range $d := $method.Comment}}{{$d}}{{end}}
+// @Accept json
+// @Produce json
+{{if $method.HasParams}}// @Param req body Request{{$method.Name}} false "req"{{end}}
+// @Success 200 {array} {{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{$r.Type}}{{end}}{{end}}
+// @Router {{ (or (index $vars (printf "Url%s" $method.Name)) (printf "/%s" (down $method.Name))) }} [POST] {{range $d := $method.Doc}}
+{{$d}} {{end}}{{end}}
+func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
+{{- if $method.HasParams}}    var req Request{{$method.Name}}
+    if err := c.ShouldBindJSON(&req); err != nil {
+    			err = wrapErr.NewWrapErr(fmt.Errorf("binding data from query {{$method.Name}}"), err)
+    			c.AbortWithError(http.StatusBadRequest, err)
+    			return
+    }
+
+    res, err := r.Usecase.{{$method.Name}}({{range $p := $method.Params}}
+     {{if (eq $p.Name "ctx") }}c.Request.Context(){{else}}req.{{(upFirst $p.Name)}}{{end}},{{end}}
+    )
+{{else}}
+	res, err := r.Usecase.{{$method.Call}}
+{{end -}}
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+    if len(res) == 0 {
+        res = {{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{$r.Type}}{}{{end}}{{end}}
+    }
+	c.JSON(http.StatusOK, res)
+}
+{{end}}
