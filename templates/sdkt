@@ -1,18 +1,16 @@
 
 {{range $method := .Interface.Methods}}
-func (s *SDK) {{$method.Declaration}} {
+func (s *SDK) {{$method.Declaration}} { 	{{$req := "nil"}}
 	url := rest.Url{{$method.Name}}
-	{{if $method.HasParams}}
+	{{if (and $method.HasParams (not $method.NoParamsRequest))}}
 	req:=rest.Request{{$method.Name}} { {{range $p := $method.Params}} {{if (eq $p.Name "ctx") }}{{else}}
 	{{(upFirst $p.Name)}} : {{$p.Name}},{{end}} {{end}}
-	}
-	{{else}}
-	req:=interface{}
+	}{{$req = "req"}}
 	{{end}}
 
-    {{range $res := $method.Results}}{{if (eq $res.Type "error")}}{{else}}res := {{$res.Type}} {} {{end}}{{end}}
+    {{range $res := $method.Results}}{{if (eq $res.Type "error")}}{{else}}res := {{$res.Type}}{} {{end}}{{end}}
 
-	if err := s.doRequest(ctx, "POST", url, req, &res); err != nil {
+	if err := s.doRequest(ctx, "POST", url, {{$req}}, &res); err != nil {
 		err = wraperr.NewWrapErr(fmt.Errorf("{{$method.Name}} request to %s", url), err)
 		return nil, err
 	}
