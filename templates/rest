@@ -13,9 +13,9 @@ type {{$rest}} struct {
 }
 
 func New{{$rest}}(router *gin.RouterGroup, usecase {{.Interface.Type}}) *{{$rest}} {
-	rest := &{{$rest}}{Usecase: usecase}
-	rest.routes(router)
-	return rest
+	result := &{{$rest}}{Usecase: usecase}
+	result.routes(router)
+	return result
 }
 
 {{ $vars := .Vars }}
@@ -30,10 +30,22 @@ func (r *{{$rest}}) routes(router *gin.RouterGroup) {
 }
 
 {{range $method := .Interface.Methods}}
+{{ $hasPager := false }}{{ $hasLimit := false}}{{ $hasOffset := false }}
 {{if (not $method.NoParamsRequest)}}
-    {{if $method.HasParams}} type Request{{$method.Name}} struct { {{range $p := $method.Params}}
-        {{if (eq $p.Name "ctx") }}{{else}}{{(upFirst $p.Name)}} {{$p.Type}}  `json:"{{(toSnakeCase $p.Name)}}" form:"{{(toSnakeCase $p.Name)}}"`{{end}} {{end}}
-        }
+    {{if $method.HasParams}} type Request{{$method.Name}} struct {
+
+    {{range $p := $method.Params}}
+
+        {{- if (eq $p.Name "limit")}}{{ $hasLimit = true }}{{end -}}
+        {{- if (eq $p.Name "offset")}}{{ $hasOffset = true }}{{end -}}
+
+        {{- if (eq $p.Name "ctx") }}
+        {{- else -}}
+        {{(upFirst $p.Name)}} {{$p.Type}}  `json:"{{(snake $p.Name)}}" form:"{{(snake $p.Name)}}"`{{end}}
+        {{end -}}
+
+    }
+
     {{end}}
 {{end}}
 {{if $enableDoc}} {{range $d := $method.Doc}}
@@ -42,23 +54,44 @@ func (r *{{$rest}}) routes(router *gin.RouterGroup) {
 // @description {{range $d := $method.Comment}}{{$d}}{{end}}
 // @Accept json
 // @Produce json {{if (and $method.HasParams (not $method.NoParamsRequest))}}
-// @Param req body Request{{$method.Name}} false "req"{{end}}
-// @Success 200 {array} {{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{$r.Type}}{{end}}{{end}} {{end}}
+// @Param req {{if (eq $method.Operation.HTTPMethod "GET")}}query{{else}}body{{end}} Request{{$method.Name}} false "req"{{end}}
+// @Success 200 {array} {{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{$r.Type}}{{end}}{{end}} {{end}} {{- if (and $hasLimit $hasOffset)}}{{ $hasPager = true }} {{end}}
 func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
 {{if  $method.NoParamsRequest}}
        res, err := r.Usecase.{{$method.Name}}( {{if $method.AcceptsContext}}c.Request.Context(){{end}} )
 {{else}}
         {{- if $method.HasParams}}    var req Request{{$method.Name}}
             {{if $method.NoParamsRequired}} if c.Request.ContentLength > 0 { {{end}}
-            if err := c.ShouldBindJSON(&req); err != nil {
-                        err = wrapErr.NewWrapErr(fmt.Errorf("binding data from query {{$method.Name}}"), err)
-                        c.AbortWithError(http.StatusBadRequest, err)
-                        return
-            }
+            {{- if (eq $method.Operation.HTTPMethod "GET") -}}
+                if err := c.ShouldBindQuery(&req); err != nil {
+                            err = wrapErr.NewWrapErr(fmt.Errorf("binding data from query {{$method.Name}}"), err)
+                            c.AbortWithError(http.StatusBadRequest, err)
+                            return
+                }
+            {{else}}
+                if err := c.ShouldBindJSON(&req); err != nil {
+                            err = wrapErr.NewWrapErr(fmt.Errorf("binding data from query {{$method.Name}}"), err)
+                            c.AbortWithError(http.StatusBadRequest, err)
+                            return
+                }
+            {{- end -}}
             {{if $method.NoParamsRequired}} } {{end}}
+            {{if $hasPager}}
+            pager := &urlstruct.Pager{Limit: req.Limit, Offset: req.Offset, MaxLimit: 1000}
+            {{end}}
 
-            res, err := r.Usecase.{{$method.Name}}({{range $p := $method.Params}}
-             {{if (eq $p.Name "ctx") }}c.Request.Context(){{else}}req.{{(upFirst $p.Name)}}{{end}},{{end}}
+            res, err := r.Usecase.{{$method.Name}}(
+            {{- range $p := $method.Params}}
+                 {{- if (eq $p.Name "ctx")}}
+                    c.Request.Context(),
+                 {{- else if (and $hasPager (eq $p.Name "limit"))}}
+                    pager.GetLimit(),
+                 {{- else if (and $hasPager (eq $p.Name "offset"))}}
+                    pager.GetOffset(),
+                 {{- else}}
+                    req.{{(upFirst $p.Name)}},
+                 {{- end -}}
+            {{end}}
             )
         {{else}}
             res, err := r.Usecase.{{$method.Call}}
