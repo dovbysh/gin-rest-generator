@@ -420,7 +420,7 @@ func TestHelper_DownFirst(t *testing.T) {
 	}
 }
 
-func Test_toSnakeCase(t *testing.T) {
+func Test_snake(t *testing.T) {
 	tests := []struct {
 		input string
 		want  string
@@ -437,6 +437,6 @@ func Test_toSnakeCase(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		assert.Equal(t, test.want, toSnakeCase(test.input))
+		assert.Equal(t, test.want, snake(test.input))
 	}
 }
