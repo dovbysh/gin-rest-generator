@@ -9,10 +9,19 @@ func (s *SDK) {{$method.Declaration}} { 	{{$req := "nil"}}
 	{{end}}
 
     {{range $res := $method.Results}}{{if (eq $res.Type "error")}}{{else}}res := {{$res.Type}}{} {{end}}{{end}}
-
-	if err := s.doRequest(ctx, "POST", url, {{$req}}, &res); err != nil {
+    {{- $HTTPMethod := $method.Operation.HTTPMethod -}}
+    {{if (eq $HTTPMethod "")}}{{$HTTPMethod = "POST"}}{{end}}
+	if err := s.doRequest(ctx, "{{$HTTPMethod}}", url, {{$req}}, &res); err != nil {
 		err = wraperr.NewWrapErr(fmt.Errorf("{{$method.Name}} request to %s", url), err)
-		return nil, err
+		return    {{range $i,$r := $method.Results -}}
+                      {{- if (eq $i 0) -}}
+                      {{- if (HasPrefix  $r.Type "[]") -}}
+                      nil
+                      {{- else -}}
+                      {{$r.Type}}{}
+                      {{- end -}}
+                      {{- end -}}
+                  {{- end -}}, err
 	}
 
 	return res, nil
