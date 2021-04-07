@@ -256,12 +256,13 @@ func varsToArgs(v vars) string {
 }
 
 var helperFuncs = template.FuncMap{
-	"up":          strings.ToUpper,
-	"down":        strings.ToLower,
-	"upFirst":     upFirst,
-	"downFirst":   downFirst,
-	"replace":     strings.ReplaceAll,
-	"snake": snake,
+	"up":        strings.ToUpper,
+	"down":      strings.ToLower,
+	"upFirst":   upFirst,
+	"downFirst": downFirst,
+	"replace":   strings.ReplaceAll,
+	"snake":     snake,
+	"HasPrefix": strings.HasPrefix,
 }
 
 func upFirst(s string) string {

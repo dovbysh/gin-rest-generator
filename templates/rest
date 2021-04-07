@@ -102,9 +102,15 @@ func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
 		return
 	}
 
-    if len(res) == 0 {
-        res = {{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{$r.Type}}{}{{end}}{{end}}
-    }
+    {{range $i,$r := $method.Results -}}
+        {{ if (eq $i 0)}}
+        {{ if (HasPrefix  $r.Type "[]") }}
+        if len(res) == 0 {
+            res = {{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{$r.Type}}{}{{end}}{{end}}
+        }
+        {{end -}}
+        {{end}}
+    {{- end -}}
 	c.JSON(http.StatusOK, res)
 }
 {{end}}
