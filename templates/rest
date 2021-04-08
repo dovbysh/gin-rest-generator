@@ -55,21 +55,23 @@ func (r *{{$rest}}) routes(router *gin.RouterGroup) {
 // @Accept json
 // @Produce json {{if (and $method.HasParams (not $method.NoParamsRequest))}}
 // @Param req {{if (eq $method.Operation.HTTPMethod "GET")}}query{{else}}body{{end}} Request{{$method.Name}} false "req"{{end}}
-// @Success 200 {array} {{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{$r.Type}}{{end}}{{end}} {{end}} {{- if (and $hasLimit $hasOffset)}}{{ $hasPager = true }} {{end}}
+// @Success 200{{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{ if (HasPrefix  $r.Type "[]") }} {array} {{else}} {object} {{end}}{{$r.Type}}{{end}}{{end}} {{end}} {{- if (and $hasLimit $hasOffset)}}{{ $hasPager = true }} {{end}}
 func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
+    var err error
+    var res {{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{$r.Type}}{{end}}{{end}}
 {{if  $method.NoParamsRequest}}
        res, err := r.Usecase.{{$method.Name}}( {{if $method.AcceptsContext}}c.Request.Context(){{end}} )
 {{else}}
         {{- if $method.HasParams}}    var req Request{{$method.Name}}
             {{if $method.NoParamsRequired}} if c.Request.ContentLength > 0 { {{end}}
             {{- if (eq $method.Operation.HTTPMethod "GET") -}}
-                if err := c.ShouldBindQuery(&req); err != nil {
+                if err = c.ShouldBindQuery(&req); err != nil {
                             err = wrapErr.NewWrapErr(fmt.Errorf("binding data from query {{$method.Name}}"), err)
                             c.AbortWithError(http.StatusBadRequest, err)
                             return
                 }
             {{else}}
-                if err := c.ShouldBindJSON(&req); err != nil {
+                if err = c.ShouldBindJSON(&req); err != nil {
                             err = wrapErr.NewWrapErr(fmt.Errorf("binding data from query {{$method.Name}}"), err)
                             c.AbortWithError(http.StatusBadRequest, err)
                             return
@@ -80,7 +82,7 @@ func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
             pager := &urlstruct.Pager{Limit: req.Limit, Offset: req.Offset, MaxLimit: 1000}
             {{end}}
 
-            res, err := r.Usecase.{{$method.Name}}(
+            res, err = r.Usecase.{{$method.Name}}(
             {{- range $p := $method.Params}}
                  {{- if (eq $p.Name "ctx")}}
                     c.Request.Context(),
@@ -94,7 +96,7 @@ func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
             {{end}}
             )
         {{else}}
-            res, err := r.Usecase.{{$method.Call}}
+            res, err = r.Usecase.{{$method.Call}}
         {{end -}}
 {{end -}}
 	if err != nil {
@@ -106,7 +108,7 @@ func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
         {{ if (eq $i 0)}}
         {{ if (HasPrefix  $r.Type "[]") }}
         if len(res) == 0 {
-            res = {{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{$r.Type}}{}{{end}}{{end}}
+            res = {{$r.Type}}{}
         }
         {{end -}}
         {{end}}
