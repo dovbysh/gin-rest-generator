@@ -60,7 +60,7 @@ func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
     var err error
     var res {{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{$r.Type}}{{end}}{{end}}
 {{if  $method.NoParamsRequest}}
-       res, err := r.Usecase.{{$method.Name}}( {{if $method.AcceptsContext}}c.Request.Context(){{end}} )
+       res, err = r.Usecase.{{$method.Name}}( {{if $method.AcceptsContext}}c.Request.Context(){{end}} )
 {{else}}
         {{- if $method.HasParams}}    var req Request{{$method.Name}}
             {{if $method.NoParamsRequired}} if c.Request.ContentLength > 0 { {{end}}
