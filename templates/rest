@@ -41,7 +41,7 @@ func (r *{{$rest}}) routes(router *gin.RouterGroup) {
 
         {{- if (eq $p.Name "ctx") }}
         {{- else -}}
-        {{(upFirst $p.Name)}} {{$p.Type}}  `json:"{{(snake $p.Name)}}" form:"{{(snake $p.Name)}}"`{{end}}
+        {{(upFirst $p.Name)}} {{$p.Type}}  `json:"{{(snake $p.Name)}}" form:"{{(snake $p.Name)}}" {{- $pg := (index $method.Gorg.Params $p.Name) }}{{if (ne $pg.Tags "")}} {{ $pg.Tags }}{{end}}`{{end}}
         {{end -}}
 
     }

@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"strings"
 
+	"github.com/dovbysh/gin-rest-generator/pkg/gorg"
 	"github.com/swaggo/swag"
 )
 
@@ -20,6 +21,7 @@ type Method struct {
 	Params    ParamsSlice
 	Results   ParamsSlice
 	Operation swag.Operation
+	Gorg      gorg.Gorg
 
 	ReturnsError     bool
 	AcceptsContext   bool
@@ -73,19 +75,12 @@ func (p Param) Pass() string {
 // NewMethod returns pointer to Signature struct or error
 func NewMethod(name string, fi *ast.Field, printer typePrinter) (*Method, error) {
 	m := Method{Name: name}
-	NoParamsRequired := false
-	NoParamsRequest := false
 	if fi.Doc != nil && len(fi.Doc.List) > 0 {
 		m.Doc = make([]string, 0, len(fi.Doc.List))
 		for _, comment := range fi.Doc.List {
 			m.Doc = append(m.Doc, comment.Text)
 			m.Operation.ParseComment(comment.Text, nil)
-			if strings.ToLower(strings.TrimSpace(comment.Text)) == "// @gorg noparamsrequired" {
-				NoParamsRequired = true
-			}
-			if strings.ToLower(strings.TrimSpace(comment.Text)) == "// @gorg noparamsrequest" {
-				NoParamsRequest = true
-			}
+			m.Gorg.ParseComment(comment.Text)
 		}
 	}
 
@@ -94,17 +89,12 @@ func NewMethod(name string, fi *ast.Field, printer typePrinter) (*Method, error)
 		for _, comment := range fi.Comment.List {
 			m.Comment = append(m.Comment, comment.Text)
 			m.Operation.ParseComment(comment.Text, nil)
-			if strings.ToLower(strings.TrimSpace(comment.Text)) == "// @gorg noparamsrequired" {
-				NoParamsRequired = true
-			}
-			if strings.ToLower(strings.TrimSpace(comment.Text)) == "// @gorg noparamsrequest" {
-				NoParamsRequest = true
-			}
+			m.Gorg.ParseComment(comment.Text)
 		}
 	}
 
-	m.NoParamsRequired = NoParamsRequired
-	m.NoParamsRequest = NoParamsRequest
+	m.NoParamsRequired = m.Gorg.NoParamsRequired
+	m.NoParamsRequest = m.Gorg.NoParamsRequest
 
 	usedNames := map[string]bool{}
 
