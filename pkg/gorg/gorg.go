@@ -7,8 +7,9 @@ import (
 )
 
 type Param struct {
-	Name string
-	Tags string
+	Name    string
+	Tags    string
+	Comment string
 }
 
 type Gorg struct {
@@ -69,6 +70,9 @@ func (g *Gorg) parseParams(s string) error {
 	}
 	if t := strings.TrimSpace(fields[2]); t == "tags" {
 		p.Tags = strings.TrimSpace(s[strings.Index(s, "tags")+len("tags"):])
+	}
+	if t := strings.TrimSpace(fields[2]); t == "comment" {
+		p.Comment = strings.TrimSpace(s[strings.Index(s, "comment")+len("comment"):])
 	}
 
 	g.Params[name] = p

@@ -1,6 +1,7 @@
 package gorg
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,17 +33,31 @@ func Test_NoParamsRequired(t *testing.T) {
 
 func Test_ParamsTags(t *testing.T) {
 	tests := []struct {
-		s    string
+		s    []string
 		want map[string]Param
 	}{
-		{s: "\t// @Gorg param from tags binding:\"required\" example:\"2020-01-01T00:00:00Z\"", want: map[string]Param{
-			"from": {Name: "from", Tags: "binding:\"required\" example:\"2020-01-01T00:00:00Z\""},
-		}},
+		{s: []string{"\t// @Gorg param from tags binding:\"required\" example:\"2020-01-01T00:00:00Z\""},
+			want: map[string]Param{
+				"from": {Name: "from", Tags: "binding:\"required\" example:\"2020-01-01T00:00:00Z\""},
+			}},
+		{s: []string{
+			"\t// @Gorg param from tags binding:\"required\" example:\"2020-01-01T00:00:00Z\"",
+			"\t// @Gorg param from comment very important documentation",
+		},
+			want: map[string]Param{
+				"from": {
+					Name:    "from",
+					Tags:    "binding:\"required\" example:\"2020-01-01T00:00:00Z\"",
+					Comment: "very important documentation",
+				},
+			}},
 	}
 	for _, tt := range tests {
-		t.Run(tt.s, func(t *testing.T) {
+		t.Run(strings.Join(tt.s, "---"), func(t *testing.T) {
 			g := Gorg{}
-			g.ParseComment(tt.s)
+			for _, s := range tt.s {
+				g.ParseComment(s)
+			}
 			assert.Equal(t, tt.want, g.Params)
 		})
 	}
