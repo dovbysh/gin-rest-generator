@@ -41,7 +41,14 @@ func (r *{{$rest}}) routes(router *gin.RouterGroup) {
 
         {{- if (eq $p.Name "ctx") }}
         {{- else -}}
-            {{(upFirst $p.Name)}} {{$p.Type}}  `json:"{{(snake $p.Name)}}" form:"{{(snake $p.Name)}}" {{- $pg := (index $method.Gorg.Params $p.Name) }}{{if (ne $pg.Tags "")}} {{ $pg.Tags }}{{end}}` {{if (ne $pg.Comment "")}} // {{ $pg.Comment }}{{end}}
+            {{- $pName := $p.Name -}}
+            {{- if (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.OffsetName $p.Name)) -}}
+                {{- $pName = "page" -}}
+            {{- end -}}
+            {{(upFirst $pName)}} {{$p.Type}}  `json:"{{(snake $pName)}}" form:"{{(snake $pName)}}" {{- $pg := (index $method.Gorg.Params $pName) }}{{if (ne $pg.Tags "")}} {{ $pg.Tags }}{{end}}` {{if (ne $pg.Comment "")}} // {{ $pg.Comment }}
+                        {{- else if (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.LimitName $p.Name)) -}} // Limit is a size of one Page
+                        {{- else if (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.OffsetName $p.Name)) -}} // Page starts from 1, then 2, 3 ...
+                        {{- end}}
         {{end -}}
         {{end -}}
 
@@ -79,17 +86,20 @@ func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
                 }
             {{- end -}}
             {{if $method.NoParamsRequired}} } {{end}}
-            {{if $hasPager}}
-            pager := &urlstruct.Pager{Limit: req.Limit, Offset: req.Offset, MaxLimit: 1000}
+            {{if $method.Gorg.Pager.Exists }}
+            pager := urlstruct.Pager{Limit: req.{{(upFirst $method.Gorg.Pager.LimitName)}}, MaxLimit: {{ $method.Gorg.Pager.MaxLimit }} }
+            pager.SetPage(req.Page)
+            {{else if $hasPager}}
+            pager := urlstruct.Pager{Limit: req.Limit, Offset: req.Offset, MaxLimit: 1000}
             {{end}}
 
             res, err = r.Usecase.{{$method.Name}}(
             {{- range $p := $method.Params}}
                  {{- if (eq $p.Name "ctx")}}
                     c.Request.Context(),
-                 {{- else if (and $hasPager (eq $p.Name "limit"))}}
+                 {{- else if (or (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.LimitName $p.Name)) (and $hasPager (eq $p.Name "limit")))}}
                     pager.GetLimit(),
-                 {{- else if (and $hasPager (eq $p.Name "offset"))}}
+                 {{- else if (or (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.OffsetName $p.Name)) (and $hasPager (eq $p.Name "offset")))}}
                     pager.GetOffset(),
                  {{- else}}
                     req.{{(upFirst $p.Name)}},
