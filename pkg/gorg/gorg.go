@@ -26,6 +26,7 @@ type Gorg struct {
 	NoParamsRequest  bool
 	Params           map[string]Param
 	Pager            Pager
+	Vars             map[string]string
 }
 
 var NoGorgTags = errors.New("no @gorg tags")
@@ -60,6 +61,8 @@ func (g *Gorg) ParseComment(s string) error {
 			return g.parseParams(gorgLineRemainder)
 		case "pager":
 			return g.parsePager(gorgLineRemainder)
+		case "var":
+			return g.parseVar(gorgLineRemainder)
 		}
 	}
 
@@ -111,5 +114,20 @@ func (g *Gorg) parsePager(s string) error {
 	g.Pager.MaxLimit = maxLimit
 	g.Pager.LimitName = limitName
 	g.Pager.OffsetName = offsetName
+	return nil
+}
+
+func (g *Gorg) parseVar(s string) error {
+	if g.Vars == nil {
+		g.Vars = make(map[string]string)
+	}
+	fields := strings.Fields(s)
+	if len(fields) < 2 {
+		return errors.Wrap(errors.Wrap(NoGorgTagsParsed, s), "unable to parse Var")
+	}
+
+	name := strings.TrimSpace(fields[0])
+	value := strings.TrimSpace(fields[1])
+	g.Vars[name] = value
 	return nil
 }
