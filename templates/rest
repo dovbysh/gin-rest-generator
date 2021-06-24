@@ -115,6 +115,21 @@ func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
 		return
 	}
 
+{{if $method.Gorg.Vars.HasRowsCount}}
+    {{if $method.Gorg.Vars.ZeroRows}}
+	if len(res.Rows) == 0 {
+		res.Rows = {{$method.Gorg.Vars.ZeroRows}}
+	}
+    {{end}}
+	pageCount := int(math.Ceil(float64(res.Count) / float64(pager.GetLimit())))
+	c.Header("X-Total-Count", strconv.Itoa(res.Count))
+	c.Header("X-Page-Count", strconv.Itoa(pageCount))
+	c.Header("X-Current-Page", strconv.Itoa(pager.GetPage()))
+	c.Header("X-Per-Page", strconv.Itoa(pager.GetLimit()))
+	c.Header("Access-Control-Expose-Headers", "X-Total-Count,X-Page-Count,X-Current-Page,X-Per-Page")
+
+	c.JSON(http.StatusOK, res.Rows)
+{{else}}
     {{range $i,$r := $method.Results -}}
         {{ if (eq $i 0)}}
         {{ if (HasPrefix  $r.Type "[]") }}
@@ -125,5 +140,6 @@ func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
         {{end}}
     {{- end -}}
 	c.JSON(http.StatusOK, res)
+{{end}}
 }
 {{end}}
