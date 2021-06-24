@@ -22,7 +22,7 @@ func Test_NoParamsRequired(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.s, func(t *testing.T) {
-			g := Gorg{}
+			g := Gorg{Vars: make(map[string]string)}
 			g.ParseComment(tt.s)
 			if got := g.NoParamsRequired; got != tt.want {
 				t.Errorf("NoParamsRequired = %v, want %v", got, tt.want)

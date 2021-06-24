@@ -75,6 +75,7 @@ func (p Param) Pass() string {
 // NewMethod returns pointer to Signature struct or error
 func NewMethod(name string, fi *ast.Field, printer typePrinter) (*Method, error) {
 	m := Method{Name: name}
+	m.Gorg.Vars = make(map[string]string)
 	if fi.Doc != nil && len(fi.Doc.List) > 0 {
 		m.Doc = make([]string, 0, len(fi.Doc.List))
 		for _, comment := range fi.Doc.List {

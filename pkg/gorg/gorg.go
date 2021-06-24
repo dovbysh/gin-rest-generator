@@ -118,9 +118,6 @@ func (g *Gorg) parsePager(s string) error {
 }
 
 func (g *Gorg) parseVar(s string) error {
-	if g.Vars == nil {
-		g.Vars = make(map[string]string)
-	}
 	fields := strings.Fields(s)
 	if len(fields) < 2 {
 		return errors.Wrap(errors.Wrap(NoGorgTagsParsed, s), "unable to parse Var")
