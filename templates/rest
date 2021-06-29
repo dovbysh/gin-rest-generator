@@ -45,7 +45,11 @@ func (r *{{$rest}}) routes(router *gin.RouterGroup) {
             {{- if (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.OffsetName $p.Name)) -}}
                 {{- $pName = "page" -}}
             {{- end -}}
-            {{(upFirst $pName)}} {{$p.Type}}  `json:"{{(snake $pName)}}" form:"{{(snake $pName)}}" {{- $pg := (index $method.Gorg.Params $pName) }}{{if (ne $pg.Tags "")}} {{ $pg.Tags }}{{end}}` {{if (ne $pg.Comment "")}} // {{ $pg.Comment }}
+            {{- $pType := $p.Type -}}
+            {{- if $p.Variadic -}}
+                {{- $pType = (replace $pType "..." "[]") -}}
+            {{- end -}}
+            {{(upFirst $pName)}} {{$pType}}  `json:"{{(snake $pName)}}" form:"{{(snake $pName)}}" {{- $pg := (index $method.Gorg.Params $pName) }}{{if (ne $pg.Tags "")}} {{ $pg.Tags }}{{end}}` {{if (ne $pg.Comment "")}} // {{ $pg.Comment }}
                         {{- else if (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.LimitName $p.Name)) -}} // Limit is a size of one Page
                         {{- else if (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.OffsetName $p.Name)) -}} // Page starts from 1, then 2, 3 ...
                         {{- end}}
@@ -95,6 +99,10 @@ func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
 
             res, err = r.Usecase.{{$method.Name}}(
             {{- range $p := $method.Params}}
+                 {{- $sufix:="" -}}
+                 {{- if $p.Variadic -}}
+                    {{- $sufix = "..." -}}
+                 {{- end -}}
                  {{- if (eq $p.Name "ctx")}}
                     c.Request.Context(),
                  {{- else if (or (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.LimitName $p.Name)) (and $hasPager (eq $p.Name "limit")))}}
@@ -102,7 +110,7 @@ func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
                  {{- else if (or (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.OffsetName $p.Name)) (and $hasPager (eq $p.Name "offset")))}}
                     pager.GetOffset(),
                  {{- else}}
-                    req.{{(upFirst $p.Name)}},
+                    req.{{(upFirst $p.Name)}}{{$sufix}},
                  {{- end -}}
             {{end}}
             )
