@@ -16,6 +16,7 @@ type Param struct {
 
 type Pager struct {
 	Exists     bool
+	UseOffset  bool
 	LimitName  string
 	OffsetName string
 	MaxLimit   int
@@ -95,6 +96,7 @@ func (g *Gorg) parseParams(s string) error {
 }
 
 func (g *Gorg) parsePager(s string) error {
+	var useOffset bool
 	fields := strings.Fields(s)
 	if len(fields) < 3 {
 		return errors.Wrap(errors.Wrap(NoGorgTagsParsed, s), "unable to parse Pager")
@@ -110,10 +112,19 @@ func (g *Gorg) parsePager(s string) error {
 	if err != nil {
 		return errors.Wrap(errors.Wrap(NoGorgTagsParsed, s), fmt.Sprintf("unable to parse Pager no MaxLimit: %#v", err))
 	}
+	if len(fields) >= 4 {
+		for i := 3; i < len(fields); i++ {
+			switch strings.ToLower(strings.TrimSpace(fields[i])) {
+			case "useoffset":
+				useOffset = true
+			}
+		}
+	}
 	g.Pager.Exists = true
 	g.Pager.MaxLimit = maxLimit
 	g.Pager.LimitName = limitName
 	g.Pager.OffsetName = offsetName
+	g.Pager.UseOffset = useOffset
 	return nil
 }
 

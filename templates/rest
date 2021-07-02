@@ -43,7 +43,9 @@ func (r *{{$rest}}) routes(router *gin.RouterGroup) {
         {{- else -}}
             {{- $pName := $p.Name -}}
             {{- if (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.OffsetName $p.Name)) -}}
-                {{- $pName = "page" -}}
+                {{- if (not $method.Gorg.Pager.UseOffset) -}}
+                    {{- $pName = "page" -}}
+                {{- end -}}
             {{- end -}}
             {{- $pType := $p.Type -}}
             {{- if $p.Variadic -}}
@@ -51,7 +53,7 @@ func (r *{{$rest}}) routes(router *gin.RouterGroup) {
             {{- end -}}
             {{(upFirst $pName)}} {{$pType}}  `json:"{{(snake $pName)}}" form:"{{(snake $pName)}}" {{- $pg := (index $method.Gorg.Params $pName) }}{{if (ne $pg.Tags "")}} {{ $pg.Tags }}{{end}}` {{if (ne $pg.Comment "")}} // {{ $pg.Comment }}
                         {{- else if (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.LimitName $p.Name)) -}} // Limit is a size of one Page
-                        {{- else if (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.OffsetName $p.Name)) -}} // Page starts from 1, then 2, 3 ...
+                        {{- else if (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.OffsetName $p.Name)) -}}{{- if (not $method.Gorg.Pager.UseOffset) -}} // Page starts from 1, then 2, 3 ...{{- end}}
                         {{- end}}
         {{end -}}
         {{end -}}
@@ -92,7 +94,11 @@ func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
             {{if $method.NoParamsRequired}} } {{end}}
             {{if $method.Gorg.Pager.Exists }}
             pager := urlstruct.Pager{Limit: req.{{(upFirst $method.Gorg.Pager.LimitName)}}, MaxLimit: {{ $method.Gorg.Pager.MaxLimit }} }
-            pager.SetPage(req.Page)
+            {{- if $method.Gorg.Pager.UseOffset }}
+                pager.Offset = req.{{(upFirst $method.Gorg.Pager.OffsetName)}}
+            {{- else -}}
+                pager.SetPage(req.Page)
+            {{ end -}}
             {{else if $hasPager}}
             pager := urlstruct.Pager{Limit: req.Limit, Offset: req.Offset, MaxLimit: 1000}
             {{end}}
