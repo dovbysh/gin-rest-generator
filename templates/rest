@@ -96,7 +96,7 @@ func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
             pager := urlstruct.Pager{Limit: req.{{(upFirst $method.Gorg.Pager.LimitName)}}, MaxLimit: {{ $method.Gorg.Pager.MaxLimit }} }
             {{- if $method.Gorg.Pager.UseOffset }}
                 pager.Offset = req.{{(upFirst $method.Gorg.Pager.OffsetName)}}
-            {{- else -}}
+            {{- else }}
                 pager.SetPage(req.Page)
             {{ end -}}
             {{else if $hasPager}}
