@@ -9,7 +9,8 @@ import (
 	"text/template"
 	"time"
 
-	minimock "github.com/gojuno/minimock/v3"
+	"github.com/dovbysh/gin-rest-generator/pkg/gorg"
+	"github.com/gojuno/minimock/v3"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -343,7 +344,7 @@ func Test_processInterface(t *testing.T) {
 				fs: token.NewFileSet(),
 				it: &ast.InterfaceType{Methods: &ast.FieldList{List: []*ast.Field{{Names: []*ast.Ident{{Name: "methodName"}}, Type: &ast.FuncType{Params: &ast.FieldList{}}}}}},
 			},
-			want1:   methodsList{"methodName": Method{Name: "methodName", Params: []Param{}}},
+			want1:   methodsList{"methodName": Method{Name: "methodName", Params: []Param{}, Gorg: gorg.Gorg{Vars: map[string]string{}}}},
 			wantErr: false,
 		},
 		{

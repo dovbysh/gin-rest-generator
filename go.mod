@@ -3,6 +3,8 @@ module github.com/dovbysh/gin-rest-generator
 go 1.16
 
 require (
+	github.com/Chekunin/wraperr v0.1.1
+	github.com/gin-gonic/gin v1.7.4
 	github.com/gojuno/minimock/v3 v3.0.4
 	github.com/kr/text v0.2.0 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect

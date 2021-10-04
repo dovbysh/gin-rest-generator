@@ -159,6 +159,11 @@ type loader struct {
 func (gc *GenerateCommand) loadTemplate(outputFileDir string) (contents, url string, err error) {
 	body, url, err := gc.loader.Load(gc.template)
 	if err != nil {
+		if !strings.HasSuffix(gc.template, ".go.tmpl") {
+			body, url, err = gc.loader.Load(gc.template + ".go.tmpl")
+		}
+	}
+	if err != nil {
 		return "", "", errors.Wrap(err, "failed to load template")
 	}
 
