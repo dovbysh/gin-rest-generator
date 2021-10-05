@@ -194,12 +194,12 @@ func TestGenerateCommand_Run(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "package parse ok but template failed",
+			name: "package_parse_ok_but_template_failed",
 			init: func(t minimock.Tester) *GenerateCommand {
-				loader := newRemoteTemplateLoaderMock(t).LoadMock.Expect("not_exists").Return(nil, "", errors.New("template load error"))
+				loader := newRemoteTemplateLoaderMock(t).LoadMock.Expect("not_exists.go.tmpl").Return(nil, "", errors.New("template load error"))
 				return NewGenerateCommand(loader)
 			},
-			args:    []string{"-p", "io", "-i", "Writer", "-o", "file.go", "-t", "not_exists"},
+			args:    []string{"-p", "io", "-i", "Writer", "-o", "file.go", "-t", "not_exists.go.tmpl"},
 			wantErr: true,
 		},
 		{
