@@ -33,7 +33,7 @@ func (r *ItoGenerateRest) routes(router *gin.RouterGroup) {
 }
 
 type RequestGetRowsFromSomething struct {
-	Dt time.Time `json:"dt" form:"dt" binding:"required"` // Datetime (RFC3339), ex. 2021-03-01T00:00:00Z
+	Dt time.Time `json:"dt" form:"dt" binding:"required"` // Datetime (RFC3339|RFC3339Nano), ex. 2021-03-01T00:00:00Z
 	B  bool      `json:"b" form:"b"`
 	I  int       `json:"i" form:"i"`
 	S  string    `json:"s" form:"s"`
@@ -45,7 +45,7 @@ type RequestGetRowsFromSomething struct {
 // @Param X-Request-Id header string false "Request-Id"
 // @Router /some-report/rows [GET]
 // @Gorg param dt tags binding:"required"
-// @Gorg param dt comment Datetime (RFC3339), ex. 2021-03-01T00:00:00Z
+// @Gorg param dt comment Datetime (RFC3339|RFC3339Nano), ex. 2021-03-01T00:00:00Z
 // @Summary // GetRowsFromSomething documentation
 // @description
 // @Accept json
