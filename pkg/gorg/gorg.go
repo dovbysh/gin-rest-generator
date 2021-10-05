@@ -1,6 +1,7 @@
 package gorg
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -22,12 +23,21 @@ type Pager struct {
 	MaxLimit   int
 }
 
+type SuccessCallback struct {
+	Package string
+	Cb      string
+}
+
 type Gorg struct {
 	NoParamsRequired bool
 	NoParamsRequest  bool
 	Params           map[string]Param
 	Pager            Pager
 	Vars             map[string]string
+	SuccessCallbacks struct {
+		Key string
+		Cbs map[string]SuccessCallback
+	}
 }
 
 var NoGorgTags = errors.New("no @gorg tags")
@@ -64,6 +74,8 @@ func (g *Gorg) ParseComment(s string) error {
 			return g.parsePager(gorgLineRemainder)
 		case "var":
 			return g.parseVar(gorgLineRemainder)
+		case "success_cb":
+			return g.parseSuccessCallbacks(gorgLineRemainder)
 		}
 	}
 
@@ -137,5 +149,23 @@ func (g *Gorg) parseVar(s string) error {
 	name := strings.TrimSpace(fields[0])
 	value := strings.TrimSpace(fields[1])
 	g.Vars[name] = value
+	return nil
+}
+
+func (g *Gorg) parseSuccessCallbacks(s string) error {
+	if g.SuccessCallbacks.Cbs != nil {
+		return errors.Wrap(errors.Wrap(NoGorgTagsParsed, s), fmt.Sprintf("success_cb already defined, Key: %s", g.SuccessCallbacks.Key))
+	}
+
+	g.SuccessCallbacks.Cbs = make(map[string]SuccessCallback)
+	fields := strings.SplitN(s, " ", 2)
+	if len(fields) < 2 {
+		return errors.Wrap(errors.Wrap(NoGorgTagsParsed, s), "unable to parse success_cb")
+	}
+	g.SuccessCallbacks.Key = strings.TrimSpace(fields[0])
+	err := json.Unmarshal([]byte(fields[1]), &g.SuccessCallbacks.Cbs)
+	if err != nil {
+		return errors.Wrap(errors.Wrap(NoGorgTagsParsed, s), fmt.Sprintf("unable to parse success_cb json error: %s", err))
+	}
 	return nil
 }

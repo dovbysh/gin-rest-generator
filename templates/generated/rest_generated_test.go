@@ -10,10 +10,23 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v2"
 )
 
 type ItoGenerateImplementation struct {
 	t *testing.T
+}
+
+func (z *ItoGenerateImplementation) GetRowsFromSomethingNoSuccessCb(ctx context.Context, dt time.Time, b bool, i int, s string) ([]Row, error) {
+	panic("implement me")
+}
+
+func (z *ItoGenerateImplementation) GetRowsFromSomethingContextOnly(ctx context.Context) ([]Row, error) {
+	panic("implement me")
+}
+
+func (z *ItoGenerateImplementation) GetRowsFromSomethingContextOnlyWithSuccessCb(ctx context.Context) ([]Row, error) {
+	panic("implement me")
 }
 
 func (z *ItoGenerateImplementation) GetRowsFromSomething(ctx context.Context, dt time.Time, b bool, i int, s string) ([]Row, error) {
@@ -29,6 +42,7 @@ func (z *ItoGenerateImplementation) GetRowsFromSomething(ctx context.Context, dt
 	}
 	return res, nil
 }
+
 func TestItoGenerateRest_handlerGetRowsFromSomething(t *testing.T) {
 	g := gin.Default()
 	r := g.Group("/")
@@ -44,8 +58,11 @@ func TestItoGenerateRest_handlerGetRowsFromSomething(t *testing.T) {
 	var (
 		resRows []Row
 		err     error
+		body    []byte
 	)
-	err = json.Unmarshal(w.Body.Bytes(), &resRows)
+	body = w.Body.Bytes()
+	t.Log(string(body))
+	err = json.Unmarshal(body, &resRows)
 	if !assert.NoError(t, err) {
 		return
 	}
@@ -53,4 +70,21 @@ func TestItoGenerateRest_handlerGetRowsFromSomething(t *testing.T) {
 		return
 	}
 	assert.True(t, dt.Equal(resRows[0].Dt))
+
+	var resRows2 []Row
+	v.Add("fmt", "func")
+	uri = UrlGetRowsFromSomething + "?" + v.Encode()
+	req = httptest.NewRequest("GET", uri, nil)
+	w = httptest.NewRecorder()
+	g.ServeHTTP(w, req)
+	body = w.Body.Bytes()
+	t.Log(string(body))
+	err = yaml.Unmarshal(body, &resRows2)
+	if !assert.NoError(t, err) {
+		return
+	}
+	if !assert.Equal(t, 1, len(resRows2)) {
+		return
+	}
+	assert.True(t, dt.Equal(resRows2[0].Dt))
 }

@@ -14,4 +14,5 @@ require (
 	golang.org/x/mod v0.4.0 // indirect
 	golang.org/x/tools v0.1.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
+	gopkg.in/yaml.v2 v2.3.0
 )
