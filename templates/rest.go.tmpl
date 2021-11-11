@@ -64,12 +64,15 @@ func (r *{{$rest}}) routes(router *gin.RouterGroup) {
 
     {{end}}
 {{end}}
+{{ $hasProduce := false }}
 {{if $enableDoc}} {{range $d := $method.Doc}}
+    {{- if (HasPrefix $d "// @Produce") -}}{{ $hasProduce = true }}{{- end}}
 {{$d}} {{end}}
 // @Summary {{range $i,$d := $method.Doc}}{{if (eq $i 0)}}{{$d}} {{end}}{{end}}
 // @description {{range $d := $method.Comment}}{{$d}}{{end}}
 // @Accept json
-// @Produce json {{if (and $method.HasParams (not $method.NoParamsRequest))}}
+{{- if (not $hasProduce)}}
+// @Produce json {{end}}{{- if (and $method.HasParams (not $method.NoParamsRequest))}}
 // @Param req {{if (eq $method.Operation.HTTPMethod "GET")}}query{{else}}body{{end}} Request{{$method.Name}} false "req"{{end}}
 // @Success 200{{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{ if (HasPrefix  $r.Type "[]") }} {array} {{else}} {object} {{end}}{{$r.Type}}{{end}}{{end}} {{end}} {{- if (and $hasLimit $hasOffset)}}{{ $hasPager = true }} {{end}}
 func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {

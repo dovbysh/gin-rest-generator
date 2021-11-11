@@ -20,6 +20,7 @@ type ItoGenerate interface {
 	// @Gorg param dt tags binding:"required"
 	// @Gorg param dt comment Datetime (RFC3339|RFC3339Nano), ex. 2021-03-01T00:00:00Z
 	// @Gorg success_cb fmt {"yaml":{"package":"github.com/dovbysh/gin-rest-generator/templates/generated", "cb":"XlsxCb"}, "func":{"cb":"func(c *gin.Context, rows []Row){ c.YAML(http.StatusOK, rows); }"}}
+	// @Produce yaml
 	GetRowsFromSomething(ctx context.Context, dt time.Time, b bool, i int, s string) ([]Row, error)
 
 	// GetRowsFromSomethingNoSuccessCb documentation
