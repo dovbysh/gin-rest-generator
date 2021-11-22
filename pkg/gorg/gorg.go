@@ -16,11 +16,12 @@ type Param struct {
 }
 
 type Pager struct {
-	Exists     bool
-	UseOffset  bool
-	LimitName  string
-	OffsetName string
-	MaxLimit   int
+	Exists       bool
+	UseOffset    bool
+	LimitName    string
+	OffsetName   string
+	MaxLimit     int
+	DefaultLimit int
 }
 
 type SuccessCallback struct {
@@ -126,9 +127,14 @@ func (g *Gorg) parsePager(s string) error {
 	}
 	if len(fields) >= 4 {
 		for i := 3; i < len(fields); i++ {
-			switch strings.ToLower(strings.TrimSpace(fields[i])) {
+			v := strings.ToLower(strings.TrimSpace(fields[i]))
+			switch v {
 			case "useoffset":
 				useOffset = true
+			}
+			z, err := strconv.Atoi(v)
+			if err == nil {
+				g.Pager.DefaultLimit = z
 			}
 		}
 	}
