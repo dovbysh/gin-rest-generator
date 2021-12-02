@@ -1,21 +1,21 @@
 import (
-	"fmt"
-	"net/http"
+"fmt"
+"net/http"
 
-	wrapErr "github.com/Chekunin/wraperr"
-	"github.com/gin-gonic/gin"
+wrapErr "github.com/Chekunin/wraperr"
+"github.com/gin-gonic/gin"
 )
 
 {{ $rest := (or .Vars.DecoratorName (printf "%sRest" .Interface.Name)) }}
 {{ $enableDoc := (not .Vars.NoDocs) }}
 type {{$rest}} struct {
-  Usecase {{.Interface.Type}}
+Usecase {{.Interface.Type}}
 }
 
 func New{{$rest}}(router *gin.RouterGroup, usecase {{.Interface.Type}}) *{{$rest}} {
-	result := &{{$rest}}{Usecase: usecase}
-	result.routes(router)
-	return result
+result := &{{$rest}}{Usecase: usecase}
+result.routes(router)
+return result
 }
 
 {{ $vars := .Vars }}
@@ -30,9 +30,12 @@ func (r *{{$rest}}) routes(router *gin.RouterGroup) {
 }
 
 {{range $method := .Interface.Methods}}
-{{ $hasPager := false }}{{ $hasLimit := false}}{{ $hasOffset := false }}{{ $needRequest := false}}
-{{if (not $method.NoParamsRequest)}}
-    {{if (or $method.HasParams $method.Gorg.SuccessCallbacks.Key)}}{{ $needRequest = true}} type Request{{$method.Name}} struct {
+    {{ $hasPager := false }}{{ $hasLimit := false}}{{ $hasOffset := false }}{{ $needRequest := false}}
+    {{if (ne $method.Gorg.RequestType "")}}
+        {{ $needRequest = true}}
+    {{end}}
+    {{if (and (not $method.NoParamsRequest) (eq $method.Gorg.RequestType ""))}}
+        {{if (or $method.HasParams $method.Gorg.SuccessCallbacks.Key)}}{{ $needRequest = true}} type Request{{$method.Name}} struct {
 
         {{range $p := $method.Params}}
 
@@ -52,34 +55,38 @@ func (r *{{$rest}}) routes(router *gin.RouterGroup) {
                     {{- $pType = (replace $pType "..." "[]") -}}
                 {{- end -}}
                 {{(upFirst $pName)}} {{$pType}}  `json:"{{(snake $pName)}}" form:"{{(snake $pName)}}" {{- $pg := (index $method.Gorg.Params $pName) }}{{if (ne $pg.Tags "")}} {{ $pg.Tags }}{{end}}` {{if (ne $pg.Comment "")}} // {{ $pg.Comment }}
-                            {{- else if (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.LimitName $p.Name)) -}} // Limit is a size of one Page
-                            {{- else if (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.OffsetName $p.Name)) -}}{{- if (not $method.Gorg.Pager.UseOffset) -}} // Page starts from 1, then 2, 3 ...{{- end}}
-                            {{- end}}
+                {{- else if (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.LimitName $p.Name)) -}} // Limit is a size of one Page
+                {{- else if (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.OffsetName $p.Name)) -}}{{- if (not $method.Gorg.Pager.UseOffset) -}} // Page starts from 1, then 2, 3 ...{{- end}}
+                {{- end}}
             {{end -}}
         {{end -}}
         {{- if $method.Gorg.SuccessCallbacks.Key -}}
             {{(upFirst $method.Gorg.SuccessCallbacks.Key)}} string `json:"{{(snake  $method.Gorg.SuccessCallbacks.Key)}}" form:"{{(snake  $method.Gorg.SuccessCallbacks.Key)}}"`
         {{end -}}
-    }
+        }
 
+        {{end}}
     {{end}}
-{{end}}
-{{ $hasProduce := false }}
-{{if $enableDoc}} {{range $d := $method.Doc}}
-    {{- if (HasPrefix $d "// @Produce") -}}{{ $hasProduce = true }}{{- end}}
-{{$d}} {{end}}
-// @Summary {{range $i,$d := $method.Doc}}{{if (eq $i 0)}}{{$d}} {{end}}{{end}}
-// @description {{range $d := $method.Comment}}{{$d}}{{end}}
-// @Accept json
-{{- if (not $hasProduce)}}
-// @Produce json {{end}}{{- if (and $method.HasParams (not $method.NoParamsRequest))}}
-// @Param req {{if (eq $method.Operation.HTTPMethod "GET")}}query{{else}}body{{end}} Request{{$method.Name}} false "req"{{end}}
-// @Success 200{{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{ if (HasPrefix  $r.Type "[]") }} {array} {{else}} {object} {{end}}{{$r.Type}}{{end}}{{end}} {{end}} {{- if (and $hasLimit $hasOffset)}}{{ $hasPager = true }} {{end}}
-func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
+    {{ $hasProduce := false }}
+    {{if $enableDoc}} {{range $d := $method.Doc}}
+        {{- if (HasPrefix $d "// @Produce") -}}{{ $hasProduce = true }}{{- end}}
+        {{$d}} {{end}}
+    // @Summary {{range $i,$d := $method.Doc}}{{if (eq $i 0)}}{{$d}} {{end}}{{end}}
+    // @description {{range $d := $method.Comment}}{{$d}}{{end}}
+    // @Accept json
+    {{- if (not $hasProduce)}}
+        // @Produce json {{end}}{{- if (and $method.HasParams (not $method.NoParamsRequest))}}
+        // @Param req {{if (eq $method.Operation.HTTPMethod "GET")}}query{{else}}body{{end}} Request{{$method.Name}} false "req"{{end}}
+    // @Success 200{{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{ if (HasPrefix  $r.Type "[]") }} {array} {{else}} {object} {{end}}{{$r.Type}}{{end}}{{end}} {{end}} {{- if (and $hasLimit $hasOffset)}}{{ $hasPager = true }} {{end}}
+    func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
     var err error
     var res {{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{$r.Type}}{{end}}{{end}}
     {{if $needRequest}}
-        var req Request{{$method.Name}}
+        {{if (ne $method.Gorg.RequestType "")}}
+            var req {{$method.Gorg.RequestType}}
+        {{else}}
+            var req Request{{$method.Name}}
+        {{end}}
         {{if $method.NoParamsRequired}} if c.Request.ContentLength > 0 { {{end}}
         {{- if (eq $method.Operation.HTTPMethod "GET") -}}
             if err = c.ShouldBindQuery(&req); err != nil {
@@ -96,93 +103,102 @@ func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
         {{- end -}}
         {{if $method.NoParamsRequired}} } {{end}}
     {{end}}
-{{if  $method.NoParamsRequest}}
-       res, err = r.Usecase.{{$method.Name}}( {{if $method.AcceptsContext}}c.Request.Context(){{end}} )
-{{else}}
+    {{if  $method.NoParamsRequest}}
+        res, err = r.Usecase.{{$method.Name}}( {{if $method.AcceptsContext}}c.Request.Context(){{end}} )
+    {{else}}
         {{- if $method.HasParams}}
+            {{ $pager := false}}
             {{if $method.Gorg.Pager.Exists }}
-            pager := urlstruct.Pager{Limit: req.{{(upFirst $method.Gorg.Pager.LimitName)}}, MaxLimit: {{ $method.Gorg.Pager.MaxLimit }} }
-            {{- if $method.Gorg.Pager.DefaultLimit }}
-                pager.DefaultLimit = {{$method.Gorg.Pager.DefaultLimit}}
-            {{end -}}
-            {{- if $method.Gorg.Pager.UseOffset }}
-                pager.Offset = req.{{(upFirst $method.Gorg.Pager.OffsetName)}}
-            {{- else }}
-                pager.SetPage(req.Page)
-            {{ end -}}
+                {{ $pager = true}}
+                pager := urlstruct.Pager{Limit: req.{{(upFirst $method.Gorg.Pager.LimitName)}}, MaxLimit: {{ $method.Gorg.Pager.MaxLimit }} }
+                {{- if $method.Gorg.Pager.DefaultLimit }}
+                    pager.DefaultLimit = {{$method.Gorg.Pager.DefaultLimit}}
+                {{end -}}
+                {{- if $method.Gorg.Pager.UseOffset }}
+                    pager.Offset = req.{{(upFirst $method.Gorg.Pager.OffsetName)}}
+                {{- else }}
+                    pager.SetPage(req.Page)
+                {{ end -}}
             {{else if $hasPager}}
-            pager := urlstruct.Pager{Limit: req.Limit, Offset: req.Offset, MaxLimit: 1000}
+                {{ $pager = true}}
+                pager := urlstruct.Pager{Limit: req.Limit, Offset: req.Offset, MaxLimit: 1000}
+            {{end}}
+            {{if (and $pager (ne $method.Gorg.RequestType ""))}}
+                req.{{(upFirst $method.Gorg.Pager.OffsetName)}} = pager.GetOffset()
+                req.{{(upFirst $method.Gorg.Pager.LimitName)}} = pager.GetLimit()
             {{end}}
 
             res, err = r.Usecase.{{$method.Name}}(
             {{- range $p := $method.Params}}
-                 {{- $sufix:="" -}}
-                 {{- if $p.Variadic -}}
+                {{- $sufix:="" -}}
+                {{- if $p.Variadic -}}
                     {{- $sufix = "..." -}}
-                 {{- end -}}
-                 {{- if (eq $p.Name "ctx")}}
+                {{- end -}}
+                {{- if (eq $p.Name "ctx")}}
                     c.Request.Context(),
-                 {{- else if (or (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.LimitName $p.Name)) (and $hasPager (eq $p.Name "limit")))}}
+                {{- else if (or (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.LimitName $p.Name)) (and $hasPager (eq $p.Name "limit")))}}
                     pager.GetLimit(),
-                 {{- else if (or (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.OffsetName $p.Name)) (and $hasPager (eq $p.Name "offset")))}}
+                {{- else if (or (and $method.Gorg.Pager.Exists (eq $method.Gorg.Pager.OffsetName $p.Name)) (and $hasPager (eq $p.Name "offset")))}}
                     pager.GetOffset(),
-                 {{- else}}
+                {{- else if (ne $method.Gorg.RequestType "")}}
+                    req,
+                {{- else}}
                     req.{{(upFirst $p.Name)}}{{$sufix}},
-                 {{- end -}}
+                {{- end -}}
             {{end}}
             )
         {{else}}
             res, err = r.Usecase.{{$method.Call}}
         {{end -}}
-{{end -}}
-	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
+    {{end -}}
+    if err != nil {
+    c.AbortWithError(http.StatusInternalServerError, err)
+    return
+    }
 
-{{if $method.Gorg.Vars.HasRowsCount}}
-    {{if $method.Gorg.Vars.ZeroRows}}
-	if len(res.Rows) == 0 {
-		res.Rows = {{$method.Gorg.Vars.ZeroRows}}
-	}
-    {{end}}
-	pageCount := int(math.Ceil(float64(res.Count) / float64(pager.GetLimit())))
-	c.Header("X-Total-Count", strconv.Itoa(res.Count))
-	c.Header("X-Page-Count", strconv.Itoa(pageCount))
-	c.Header("X-Current-Page", strconv.Itoa(pager.GetPage()))
-	c.Header("X-Per-Page", strconv.Itoa(pager.GetLimit()))
-	c.Header("Access-Control-Expose-Headers", "X-Total-Count,X-Page-Count,X-Current-Page,X-Per-Page")
+    {{if $method.Gorg.Vars.HasRowsCount}}
+        {{if $method.Gorg.Vars.ZeroRows}}
+            if len(res.Rows) == 0 {
+            res.Rows = {{$method.Gorg.Vars.ZeroRows}}
+            }
+        {{end}}
+        pageCount := int(math.Ceil(float64(res.Count) / float64(pager.GetLimit())))
+        c.Header("X-Total-Count", strconv.Itoa(res.Count))
+        c.Header("X-Page-Count", strconv.Itoa(pageCount))
+        c.Header("X-Current-Page", strconv.Itoa(pager.GetPage()))
+        c.Header("X-Per-Page", strconv.Itoa(pager.GetLimit()))
+        c.Header("Access-Control-Expose-Headers", "X-Total-Count,X-Page-Count,X-Current-Page,X-Per-Page")
 
-    {{if $method.Gorg.SuccessCallbacks.Key}}
-        switch req.{{(upFirst $method.Gorg.SuccessCallbacks.Key)}} {
-        {{ range $k, $cb := $method.Gorg.SuccessCallbacks.Cbs}}
-            case "{{$k}}":
-            {{$cb.Cb}}(c, res.Rows)
-            return
-        {{end}}
-        }
-    {{end}}
-	c.JSON(http.StatusOK, res.Rows)
-{{else}}
-    {{range $i,$r := $method.Results -}}
-        {{ if (eq $i 0)}}
-        {{ if (HasPrefix  $r.Type "[]") }}
-        if len(res) == 0 {
-            res = {{$r.Type}}{}
-        }
-        {{end -}}
-        {{end}}
-    {{- end -}}
-    {{if $method.Gorg.SuccessCallbacks.Key}}
-        switch req.{{(upFirst $method.Gorg.SuccessCallbacks.Key)}} {
+        {{if $method.Gorg.SuccessCallbacks.Key}}
+            switch req.{{(upFirst $method.Gorg.SuccessCallbacks.Key)}} {
             {{ range $k, $cb := $method.Gorg.SuccessCallbacks.Cbs}}
-            case "{{$k}}":
+                case "{{$k}}":
+                {{$cb.Cb}}(c, res.Rows)
+                return
+            {{end}}
+            }
+        {{end}}
+        c.JSON(http.StatusOK, res.Rows)
+    {{else}}
+        {{range $i,$r := $method.Results -}}
+            {{ if (eq $i 0)}}
+                {{ if (HasPrefix  $r.Type "[]") }}
+                    if len(res) == 0 {
+                    res = {{$r.Type}}{}
+                    }
+                {{end -}}
+            {{end}}
+        {{- end -}}
+        {{if $method.Gorg.SuccessCallbacks.Key}}
+            switch req.{{(upFirst $method.Gorg.SuccessCallbacks.Key)}} {
+            {{ range $k, $cb := $method.Gorg.SuccessCallbacks.Cbs}}
+                case "{{$k}}":
                 {{$cb.Cb}}(c, res)
                 return
             {{end}}
-        }
+            }
+        {{end}}
+        c.JSON(http.StatusOK, res)
     {{end}}
-    c.JSON(http.StatusOK, res)
-{{end}}
-}
+    }
 {{end}}

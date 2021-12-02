@@ -39,6 +39,7 @@ type Gorg struct {
 		Key string
 		Cbs map[string]SuccessCallback
 	}
+	RequestType string
 }
 
 var NoGorgTags = errors.New("no @gorg tags")
@@ -77,6 +78,8 @@ func (g *Gorg) ParseComment(s string) error {
 			return g.parseVar(gorgLineRemainder)
 		case "success_cb":
 			return g.parseSuccessCallbacks(gorgLineRemainder)
+		case "request_type":
+			return g.parseRequestType(gorgLineRemainder)
 		}
 	}
 
@@ -173,5 +176,10 @@ func (g *Gorg) parseSuccessCallbacks(s string) error {
 	if err != nil {
 		return errors.Wrap(errors.Wrap(NoGorgTagsParsed, s), fmt.Sprintf("unable to parse success_cb json error: %s", err))
 	}
+	return nil
+}
+
+func (g *Gorg) parseRequestType(s string) error {
+	g.RequestType = s
 	return nil
 }
