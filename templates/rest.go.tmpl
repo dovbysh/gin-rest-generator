@@ -76,7 +76,7 @@ func (r *{{$rest}}) routes(router *gin.RouterGroup) {
     // @Accept json
     {{- if (not $hasProduce)}}
         // @Produce json {{end}}{{- if (and $method.HasParams (not $method.NoParamsRequest))}}
-        // @Param req {{if (eq $method.Operation.HTTPMethod "GET")}}query{{else}}body{{end}} Request{{$method.Name}} false "req"{{end}}
+        // @Param req {{if (eq $method.Operation.HTTPMethod "GET")}}query{{else}}body{{end}} {{if (ne $method.Gorg.RequestType "")}}{{$method.Gorg.RequestType}}{{else}}Request{{$method.Name}}{{end}} false "req"{{end}}
     // @Success 200{{range $i, $r := $method.Results}}{{if (eq $i 0)}}{{ if (HasPrefix  $r.Type "[]") }} {array} {{else}} {object} {{end}}{{$r.Type}}{{end}}{{end}} {{end}} {{- if (and $hasLimit $hasOffset)}}{{ $hasPager = true }} {{end}}
     func (r *{{$rest}}) handler{{$method.Name}}(c *gin.Context) {
     var err error
