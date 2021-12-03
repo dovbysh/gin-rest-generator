@@ -127,7 +127,13 @@ func (r *{{$rest}}) routes(router *gin.RouterGroup) {
                 req.{{(upFirst $method.Gorg.Pager.OffsetName)}} = pager.GetOffset()
                 req.{{(upFirst $method.Gorg.Pager.LimitName)}} = pager.GetLimit()
             {{end}}
-
+            {{if (ne $method.Gorg.RequestAfterParseCb "")}}
+                req, err = {{$method.Gorg.RequestAfterParseCb}}
+                if err != nil {
+                c.AbortWithError(http.StatusBadRequest, err)
+                return
+                }
+            {{end}}
             res, err = r.Usecase.{{$method.Name}}(
             {{- range $p := $method.Params}}
                 {{- $sufix:="" -}}

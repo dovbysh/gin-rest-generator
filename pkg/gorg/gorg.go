@@ -39,7 +39,8 @@ type Gorg struct {
 		Key string
 		Cbs map[string]SuccessCallback
 	}
-	RequestType string
+	RequestType         string
+	RequestAfterParseCb string
 }
 
 var NoGorgTags = errors.New("no @gorg tags")
@@ -80,6 +81,8 @@ func (g *Gorg) ParseComment(s string) error {
 			return g.parseSuccessCallbacks(gorgLineRemainder)
 		case "request_type":
 			return g.parseRequestType(gorgLineRemainder)
+		case "request_after_parse_cb":
+			return g.parseRequestAfterParseCb(gorgLineRemainder)
 		}
 	}
 
@@ -181,5 +184,10 @@ func (g *Gorg) parseSuccessCallbacks(s string) error {
 
 func (g *Gorg) parseRequestType(s string) error {
 	g.RequestType = s
+	return nil
+}
+
+func (g *Gorg) parseRequestAfterParseCb(s string) error {
+	g.RequestAfterParseCb = s
 	return nil
 }
