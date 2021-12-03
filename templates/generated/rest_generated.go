@@ -65,6 +65,7 @@ func (r *ItoGenerateRest) handlerGetRowsFromSomething(c *gin.Context) {
 	var res []Row
 
 	var req RequestGetRowsFromSomething
+
 	if err = c.ShouldBindQuery(&req); err != nil {
 		err = wrapErr.NewWrapErr(fmt.Errorf("binding data from query GetRowsFromSomething"), err)
 		c.AbortWithError(http.StatusBadRequest, err)
@@ -122,6 +123,7 @@ func (r *ItoGenerateRest) handlerGetRowsFromSomethingContextOnly(c *gin.Context)
 	var res []Row
 
 	var req RequestGetRowsFromSomethingContextOnly
+
 	if err = c.ShouldBindQuery(&req); err != nil {
 		err = wrapErr.NewWrapErr(fmt.Errorf("binding data from query GetRowsFromSomethingContextOnly"), err)
 		c.AbortWithError(http.StatusBadRequest, err)
@@ -165,6 +167,7 @@ func (r *ItoGenerateRest) handlerGetRowsFromSomethingContextOnlyWithSuccessCb(c 
 	var res []Row
 
 	var req RequestGetRowsFromSomethingContextOnlyWithSuccessCb
+
 	if err = c.ShouldBindQuery(&req); err != nil {
 		err = wrapErr.NewWrapErr(fmt.Errorf("binding data from query GetRowsFromSomethingContextOnlyWithSuccessCb"), err)
 		c.AbortWithError(http.StatusBadRequest, err)
@@ -219,6 +222,7 @@ func (r *ItoGenerateRest) handlerGetRowsFromSomethingNoSuccessCb(c *gin.Context)
 	var res []Row
 
 	var req RequestGetRowsFromSomethingNoSuccessCb
+
 	if err = c.ShouldBindQuery(&req); err != nil {
 		err = wrapErr.NewWrapErr(fmt.Errorf("binding data from query GetRowsFromSomethingNoSuccessCb"), err)
 		c.AbortWithError(http.StatusBadRequest, err)
